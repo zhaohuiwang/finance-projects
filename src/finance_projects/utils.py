@@ -1,4 +1,9 @@
+"""
+Utility functions classes to provide common and reusable functionalities for Finance projects.
 
+By zhaohui Wang
+Initiated on 06/13/2025
+"""
 
 from typing import List, Optional
 
@@ -9,7 +14,7 @@ import xarray
 import yfinance
 
 
-# Function to fetch data for a list of tickers and return as a DataArray
+# Function to fetch data for a list of tickers and return as a Xarray.DataArray
 def fetch_ticker_data(tickers: List[str], start_date: date, end_date: date) -> xarray.DataArray:
     """
     Fetch historical stock data from yfinance for a list of tickers
@@ -82,7 +87,13 @@ def fetch_ticker_data(tickers: List[str], start_date: date, end_date: date) -> x
 
 @dataclass
 class StockData:
-    """Stock data"""
+    """
+    Stock data container with meta data attributes and data in Xarray.
+
+    Usage example,
+    stock_h = StockData(days_span=31)
+    print(stock_h.data)
+    """
     tickers_list: List[str] = field(default_factory=lambda: [
         'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA' 
     ])
@@ -110,12 +121,15 @@ class StockData:
         
         # Assign to data attribute
         self.data.attrs["source"] = "yfinance"
-        self.data.attrs["tickers"] = self.tickers_list  # Fixed attribute
+        self.data.attrs["tickers"] = self.tickers_list  
         self.data.attrs["start_date"] = self.start_date
         self.data.attrs["end_date"] = self.end_date
 
     def complete_date(self) -> 'StockData':
-        """Return a new StockData with the same data (no string formatting needed)."""
+        """
+        Return a new StockData with the same data (no string formatting needed).
+        This method does nothing more besides wrappiong up all data variables may not be removed later once all possible sceneria test are completed.
+        """
         return StockData(
             tickers_list=self.tickers_list,
             variables_list=self.variables_list,
@@ -125,6 +139,3 @@ class StockData:
             data=self.data
         )
 
-# Example usage
-stock_h = StockData(days_span=31)
-print(stock_h.data)
