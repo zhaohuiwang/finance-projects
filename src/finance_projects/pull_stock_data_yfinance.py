@@ -44,6 +44,15 @@ def fetch_ticker_data(tickers: List[str], start_date: date, end_date: date) -> x
     To subset
     xr_data["Close"].sel(ticker="AAPL", time=slice("2023-06-01", "2023-08-01"))
     xr_data.sel(ticker='AAPL', time=slice("2023-06-01", "2023-08-01"))['Close'].data
+
+    yfinance.Ticker(ticker).history(start= , end= ) 
+    -- Get price + dividends + splits but only processes one ticker at a time.
+    ['Open', 'High', 'Low', 'Close', 'Volume', 'Dividends', 'Stock Splits']
+
+    yfinance.download(tickers, start= , end= , ...) 
+    -- only daily prices and can process a list of ticksers
+    ['Open', 'High', 'Low', 'Close', 'Volume']
+
     """
     # Store results in a dictionary
     data_dict = {}
