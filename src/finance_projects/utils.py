@@ -25,9 +25,9 @@ def fetch_ticker_data(tickers: List[str], start_date: date, end_date: date=date.
     tickers: List[str]
         A list of tickers. For example, ['AAPL', 'MSFT', 'GOOGL', 'TSLA']
     start_date: date   
-        For example, "2023-06-01"
+        For example, datetime.date(2023,6,1)
     end_date: date
-        For example, "2023-08-01"
+        For example, datetime.date(2023,8,1)
     Return 
         xarray.DataArray
 
