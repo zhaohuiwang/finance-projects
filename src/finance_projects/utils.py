@@ -3,10 +3,14 @@ Utility functions classes to provide common and reusable functionalities for Fin
 
 By zhaohui Wang
 Initiated on 06/13/2025
+
+source ../venvs/uv-venvs/finance/.venv/bin/activate
+/mnt/e/zhaohuiwang/dev/venvs/uv-venvs/finance/.venv/bin/python
 """
 
 from typing import List, Optional
 
+#from pydantic.dataclasses import dataclass, Field
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 import pandas as pd
@@ -15,7 +19,7 @@ import yfinance
 
 
 # Function to fetch data for a list of tickers and return as a Xarray.DataArray
-def fetch_ticker_data(tickers: List[str], start_date: date, end_date: date) -> xarray.DataArray:
+def fetch_ticker_data(tickers: List[str], start_date: date, end_date: date=date.today()) -> xarray.DataArray:
     """
     Fetch historical stock data from yfinance for a list of tickers
     Parameters:
@@ -57,15 +61,16 @@ def fetch_ticker_data(tickers: List[str], start_date: date, end_date: date) -> x
     yfinance.download(tickers, start= , end= , ...) 
     -- only daily prices and can process a list of ticksers
     ['Open', 'High', 'Low', 'Close', 'Volume']
-
+    Example:
+    fetch_ticker_data(['AAPL', 'MSFT'], start_date= date(2025, 5, 15))
     """
     # Store results in a dictionary
     data_dict = {}
 
     for ticker in tickers:
         tkr = yfinance.Ticker(ticker)
-
-        df = tkr.history(start=start_date, end=end_date, actions=True)
+        # yfinance.Ticker history method takes (period="1y", interval="1d", start="2024-06-24", end="2025-06-24") not datetime 
+        df = tkr.history(start=start_date.strftime("%Y-%m-%d"), end=end_date.strftime("%Y-%m-%d"), actions=True)
         if df.empty:
             raise ValueError(f"No data returned for ticker {ticker}")
 
@@ -138,4 +143,5 @@ class StockData:
             start_date=self.start_date,
             data=self.data
         )
+
 
