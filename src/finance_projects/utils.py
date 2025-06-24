@@ -8,10 +8,9 @@ source ../venvs/uv-venvs/finance/.venv/bin/activate
 /mnt/e/zhaohuiwang/dev/venvs/uv-venvs/finance/.venv/bin/python
 """
 
-from typing import List, Optional
+from typing import List, Optional, Any
 
-#from pydantic.dataclasses import dataclass, Field
-from dataclasses import dataclass, field
+from pydantic.dataclasses import dataclass, Field
 from datetime import date, timedelta
 import pandas as pd
 import xarray
@@ -99,16 +98,18 @@ class StockData:
     stock_h = StockData(days_span=31)
     print(stock_h.data)
     """
-    tickers_list: List[str] = field(default_factory=lambda: [
+    tickers_list: List[str] = Field(default_factory=lambda: [
         'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA' 
     ])
-    variables_list: List[str] = field(default_factory=lambda: [
+    variables_list: List[str] = Field(default_factory=lambda: [
         'Close', 'Volume'
     ])
-    end_date: date = field(default_factory=date.today)
+    end_date: date = Field(default_factory=date.today) # date.today is callable, not date.today()
     days_span: Optional[int] = None
     start_date: Optional[date] = None
-    data: Optional[xarray.DataArray] = field(default=None, init=False)
+    data: Optional[Any] = Field(default_factory=None, init=False)
+    #data: Optional[xarray.DataArray] = Field(default_factory=None, init=False)
+    # Pydantic can not validate xarray.DataArray.
 
     def __post_init__(self):
         # Validate inputs
@@ -130,10 +131,10 @@ class StockData:
         self.data.attrs["start_date"] = self.start_date
         self.data.attrs["end_date"] = self.end_date
 
-    def complete_date(self) -> 'StockData':
+    def complete_data(self) -> 'StockData':
         """
         Return a new StockData with the same data (no string formatting needed).
-        This method does nothing more besides wrappiong up all data variables may not be removed later once all possible sceneria test are completed.
+        This method does nothing more besides wrappiong up all data variables may be removed later once all possible sceneria are rulled out.
         """
         return StockData(
             tickers_list=self.tickers_list,
@@ -145,3 +146,4 @@ class StockData:
         )
 
 
+# example: StockData(['AAPL', 'MSFT'], start_date= date(2025, 5, 15))
