@@ -5,6 +5,7 @@ Initiated on 06/13/2025
 source ../venvs/uv-venvs/finance/.venv/bin/activate
 /mnt/e/zhaohuiwang/dev/venvs/uv-venvs/finance/.venv/bin/python
 """
+import math
 
 from typing import List, Optional, Any
 from pydantic.dataclasses import dataclass, Field
@@ -170,16 +171,18 @@ stock_data.data['Close']
 """
 
 import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 #stock_data.data['Close'].plot.line(x="time")
 
-stock_data.data['Close'].plot.line(
-    x="time", hue="ticker", 
-)
+#stock_data.data['Close'].plot.line(
+#    x="time", hue="ticker", 
+#)
+ncols = 4
+nrows = int(math.ceil(len(stock_data.data.tickers) / ncols))
 
-plt.title('Sample Xarray Time Series')
-plt.xlabel('Time')
-plt.ylabel('Value')
+fig, ax = plt.subplots(nrows = nrows, ncols = ncols, figsize = (16,nrows*4))
+ax = ax.ravel()
+for i, ticker in enumerate(stock_data.data.tickers):
+    stock_data.data['Close'].sel(ticker=ticker).plot(ax=ax[i])
+plt.tight_layout()
 plt.savefig('my_plot.png')
-
