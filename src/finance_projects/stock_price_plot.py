@@ -5,12 +5,14 @@ Initiated on 06/13/2025
 source ../venvs/uv-venvs/finance/.venv/bin/activate
 /mnt/e/zhaohuiwang/dev/venvs/uv-venvs/finance/.venv/bin/python
 """
-import math
-
-from typing import List, Optional, Any
-from pydantic.dataclasses import dataclass, Field
+from collections import OrderedDict
 from datetime import date, timedelta
+import math
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 import pandas as pd
+from pydantic.dataclasses import dataclass, Field
+from typing import Any, List, Optional, Union
 import xarray
 import yfinance
 # Function to fetch data for a list of tickers and return as a Xarray.DataArray
@@ -125,7 +127,7 @@ class StockData:
         """
         return StockData(
             tickers_list=self.tickers_list,
-            variables_list=self.variables_list,
+            #variables_list=self.variables_list,
             end_date=self.end_date,
             days_span=self.days_span,
             start_date=self.start_date,
@@ -133,56 +135,55 @@ class StockData:
         )
 # example: StockData(['AAPL', 'MSFT'], start_date= date(2025, 5, 15))
 
-from collections import OrderedDict
-from easydict import EasyDict as edict
-# EasyDict allows to access dict values as attributes (works recursively). A Javascript-like properties dot notation for python dicts.
+def plot_stock_xarray(xarray_data: xarray.DataArray, ncols: int=4, savepath: str='stockprice_plot.png') -> Union[Figure, None]:
+    """ Plot the data in Xarray and save to a desinated path. """
 
-stocks = {
-    'JOBY': 'Joby Aviation, Inc.',
-    'ACHR': 'Archer Aviation Inc.',
-    'PONY': 'Pony AI Inc.',
-    'WRD': 'WeRide Inc.',
-    'QBTS': 'D-Wave Quantum Inc.',
-    'IONQ': 'IonQ, Inc.',
-    'HON': 'Honeywell International Inc.',
-    'MRVL': 'Marvell Technology, Inc.',
-    'QUBT': 'Quantum Computing Inc.',
-    'ARRY': 'Array Technologies, Inc.',
-    'BRK-B': 'Berkshire Hathaway Inc.',
-    'APLD': 'Applied Digital Corporation',
-    'CRWV': 'Coreweave',
-    'NBIS': 'Nebius Group N.V.',
-    'PLTR': 'Palantir Technologies Inc.',
-    'CRWD': 'CrowdStrike Holdings, Inc.',
-    'HIMS': 'Hims & Hers Health, Inc.',
-    'OGN': 'Organon & Co.',
-    'UNH': 'UnitedHealth Group Incorporated',
-    'RGC': 'Regencell Bioscience Holdings Limited'
-    }
+    nrows = int(math.ceil(len(xarray_data.data.tickers) / ncols))
 
-stocks_dict = OrderedDict(list(stocks.items()))
-tickers_list = list(stocks_dict.keys())
-stock_data = StockData(tickers_list=tickers_list,  days_span= 14)
-"""
-stock_data.__dict__.keys()
-returns: dict_keys(['tickers_list', 'days_span', 'start_date', 'end_date', 'data'])
-# to select the `Close` price only
-stock_data.data['Close']
-"""
+    fig, ax = plt.subplots(nrows = nrows, ncols = ncols, figsize = (16, nrows*4))
+    ax = ax.ravel()
+    for i, ticker in enumerate(xarray_data.data.tickers):
+        xarray_data.data['Close'].sel(ticker=ticker).plot(ax=ax[i])
+    fig.tight_layout()
+    fig.savefig(savepath)
+    plt.close(fig)
 
-import matplotlib
-import matplotlib.pyplot as plt
-#stock_data.data['Close'].plot.line(x="time")
 
-#stock_data.data['Close'].plot.line(
-#    x="time", hue="ticker", 
-#)
-ncols = 4
-nrows = int(math.ceil(len(stock_data.data.tickers) / ncols))
+if __name__ == "__main__":
 
-fig, ax = plt.subplots(nrows = nrows, ncols = ncols, figsize = (16,nrows*4))
-ax = ax.ravel()
-for i, ticker in enumerate(stock_data.data.tickers):
-    stock_data.data['Close'].sel(ticker=ticker).plot(ax=ax[i])
-plt.tight_layout()
-plt.savefig('my_plot.png')
+    stocks = {
+        'JOBY': 'Joby Aviation, Inc.',
+        'ACHR': 'Archer Aviation Inc.',
+        'PONY': 'Pony AI Inc.',
+        'WRD': 'WeRide Inc.',
+        'QBTS': 'D-Wave Quantum Inc.',
+        'IONQ': 'IonQ, Inc.',
+        'HON': 'Honeywell International Inc.',
+        'MRVL': 'Marvell Technology, Inc.',
+        'QUBT': 'Quantum Computing Inc.',
+        'ARRY': 'Array Technologies, Inc.',
+        'BRK-B': 'Berkshire Hathaway Inc.',
+        'APLD': 'Applied Digital Corporation',
+        'CRWV': 'Coreweave',
+        'NBIS': 'Nebius Group N.V.',
+        'PLTR': 'Palantir Technologies Inc.',
+        'CRWD': 'CrowdStrike Holdings, Inc.',
+        'HIMS': 'Hims & Hers Health, Inc.',
+        'OGN': 'Organon & Co.',
+        'UNH': 'UnitedHealth Group Incorporated',
+        'RGC': 'Regencell Bioscience Holdings Limited'
+        }
+
+    stocks_dict = OrderedDict(list(stocks.items()))
+    tickers_list = list(stocks_dict.keys())
+    stock_data = StockData(tickers_list=tickers_list,  days_span= 14)
+    """
+    stock_data.__dict__.keys()
+    returns: dict_keys(['tickers_list', 'days_span', 'start_date', 'end_date', 'data'])
+    # to select the `Close` price only
+    stock_data.data['Close']
+    """
+    plot_stock_xarray(xarray_data=stock_data, ncols=4, savepath='stockprice_plot.png')
+
+# 
+# $ python src/finance_projects/utils.py
