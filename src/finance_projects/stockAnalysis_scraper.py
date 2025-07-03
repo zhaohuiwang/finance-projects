@@ -1,4 +1,5 @@
 import os
+import random
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -176,10 +177,12 @@ while True:
      if (not next_button.is_enabled()) or ("disabled" in next_button.get_attribute("class")):
          print("No more pages to scrape. Stopping.")
          break
+     
+     time.sleep(random.uniform(2, 4))  # Wait for the next page to load
+     
      try:    
          # Click the "Next" button
          next_button.click()
-         time.sleep(random.uniform(2, 4))  # Wait for the next page to load
          page_count += 1
          print(f"Scraping page {page_count}")
          # Scrape the new page
