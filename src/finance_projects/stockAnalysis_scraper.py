@@ -14,9 +14,13 @@ import time
 
 import logging
 # logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 # Base URL
 base_url = "https://stockanalysis.com/trending/"
+# The page at https://stockanalysis.com/trending/ likely uses JavaScript to load the pagination element dynamically, which is common for modern web applications.
+
 
 # Set up Chrome options
 options = Options()
@@ -165,51 +169,59 @@ else:
     if page_headers and page_rows:
         headers = page_headers
         all_rows.extend(page_rows)
-        print(f"{len(page_rows)} rows found on page: {page_count}.")
+        print(f"{len(page_rows)} rows found on page: {page_count}, starting with {page_rows[0][1]}")
 
-# Loop through pages by clicking the "Next" button
+# Extract pagination information
+
+# page info HTML element
+# <span class="whitespace-nowrap"><span class="hidden sm:inline">Page</span> 1 of 110</span>
+# Next page click HTML elemet:
+# <button class="controls-btn xs:pl-1 xs:pr-1.5 bp:text-sm sm:pl-3 sm:pr-1"><span class="hidden sm:inline">Next</span> <svg class="-mb-px bp:ml-1" viewBox="0 0 20 20" fill="currentColor" style="max-width:40px" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg></button>
 while True:
     page_count += 1
+
+    ## Find the clickable "Next" element
     try:
-        # Find the "Next" button: Right click > Elements >
-        # <span class="hidden sm:inline" data-svelte-h="svelte-1hxgo6f">Next</span>
-        next_button = driver.find_element(
-            By.XPATH,
-            "//span[@class='hidden sm:inline' and text()='Next']"
+        #next_button = WebDriverWait(driver, 10).until(
+        #    EC.element_to_be_clickable((By.XPATH, '//span[@class="hidden sm:inline" and contains(text(), "Next")]'))
+        #    )
+        # If the hidden sm:inline classes change dynamically, consider using the data-svelte-h attribute for the "Next" button: Confirmed by Grok
+        next_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, '//span[@data-svelte-h="svelte-1hxgo6f"]'))
             )
-        print(f"Moving to page {page_count} driver.find_element")
-        
     except Exception as e:
         print(e)
-        try:
-            next_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, '//span[@class="hidden sm:inline" and contains(text(), "Next")]'))
-            )
-            print(f"Moving to page {page_count} WebDriverWait")
-        except Exception as e:
-            print(e)
-            break
-
+        break
+    
     if (not next_button.is_enabled()) or ("disabled" in next_button.get_attribute("class")):
         print("No more pages to scrape. Stopping.")
         break
      
     time.sleep(random.uniform(2, 4))  # Wait for the next page to load
-     
-    try:    
-        # Click the "Next" button
-        next_button.click()
 
-    except Exception as e:
-        print(f"No more pages or Error occurred: {e}")
-        break
-    else:
+    ## Click and Scrap
+    # Attempt standard click
+    try:
+        next_button.click()
+        print("Clicked the Next button (standard click).")
+    except Exception:
+        print("Standard click intercepted. Trying JavaScript click...")
+            
+        # Fallback to JavaScript click
+        try:
+            driver.execute_script("arguments[0].click();", next_button)
+            print("Clicked the Next button (JavaScript click).")
+            time.sleep(2)  # Wait for page to load after click
+        except Exception as e:
+            print(e)
+            break
+    finally:
         # Scrape the new page
         page_headers, page_rows = scrape_page()
 
         if page_rows:
             all_rows.extend(page_rows)
-            print(f"{len(page_rows)} rows found on page: {page_count}.")
+            print(f"{len(page_rows)} rows found on page: {page_count}, starting with {page_rows[0][1]}")
 
 # Close the driver
 driver.quit()
@@ -245,4 +257,192 @@ import sys
 
 # Setup client
 finnhub_client = finnhub.Client(api_key="...")
+
+
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
+# Try to find the page number element
+try:
+        page_element = WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located(
+                (By.XPATH, '//div[contains(text(), "Page ") and contains(text(), " of ")] | //span[contains(text(), "Page ") and contains(text(), " of ")]')
+            )
+        )
+        page_text = page_element.text
+        print(f"Found page element text: {page_text}")
+
+        # Extract current and total page numbers
+        page_info = page_text.split(" of ")
+        current_page = int(page_info[0].replace("Page ", "").strip())
+        total_pages = int(page_info[1].strip())
+        print(f"Current Page: {current_page}")
+        print(f"Total Pages: {total_pages}")
+
+except TimeoutException:
+        print("Timeout: Could not find page number element.")
+        print("Current page source snippet:")
+        print(driver.page_source[:1000])  # Print first 1000 characters
+        try:
+            # Fallback: Broader search for any element with " of "
+            page_element = driver.find_element(By.XPATH, '//*[contains(text(), " of ")]')
+            page_text = page_element.text
+            print(f"Fallback found page element text: {page_text}")
+            page_info = page_text.split(" of ")
+            current_page = int(page_info[0].replace("Page ", "").strip())
+            total_pages = int(page_info[1].strip())
+            print(f"Current Page: {current_page}")
+            print(f"Total Pages: {total_pages}")
+        except (NoSuchElementException, ValueError):
+            print("Fallback XPath also failed. Element not found or text format incorrect.")
+
+    # Try to find and click the Next button
+try:
+        next_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable(
+                (By.XPATH, '//button[contains(text(), "Next")] | //span[contains(text(), "Next")]')
+            )
+        )
+        next_button.click()
+        print("Clicked the Next button.")
+except TimeoutException:
+        print("Timeout: Could not find or click the Next button.")
+
+
+
+
+
+try:
+
+    # Check for iframes
+    iframes = driver.find_elements(By.TAG_NAME, "iframe")
+    if iframes:
+        print(f"Found {len(iframes)} iframe(s). Trying first iframe...")
+        driver.switch_to.frame(iframes[0])
+
+    # Try to find the page number element
+    try:
+        page_element = WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located(
+                (By.XPATH, '//*[contains(text(), "Page ") and contains(text(), " of ")]')
+            )
+        )
+        page_text = page_element.text
+        print(f"Found page element text: '{page_text}'")
+
+        # Extract current and total page numbers
+        try:
+            page_info = page_text.split(" of ")
+            current_page = int(page_info[0].replace("Page ", "").strip())
+            total_pages = int(page_info[1].strip())
+            print(f"Current Page: {current_page}")
+            print(f"Total Pages: {total_pages}")
+        except (IndexError, ValueError) as e:
+            print(f"Error parsing page text '{page_text}': {e}")
+
+    except TimeoutException:
+        print("Timeout: Could not find page number element.")
+        print("Current page source snippet:")
+        print(driver.page_source[:1000])
+        try:
+            # Fallback: Even broader search
+            page_element = driver.find_element(By.XPATH, '//*[contains(text(), " of ")]')
+            page_text = page_element.text
+            print(f"Fallback found page element text: '{page_text}'")
+            page_info = page_text.split(" of ")
+            current_page = int(page_info[0].replace("Page ", "").strip())
+            total_pages = int(page_info[1].strip())
+            print(f"Current Page: {current_page}")
+            print(f"Total Pages: {total_pages}")
+        except (NoSuchElementException, ValueError) as e:
+            print(f"Fallback failed: Element not found or text format incorrect. Error: {e}")
+
+    # Switch back to main content if iframe was used
+    if iframes:
+        driver.switch_to.default_content()
+
+    # Try to find and click the Next button
+    try:
+        next_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable(
+                (By.XPATH, '//span[@data-svelte-h="svelte-1hxgo6f" and contains(text(), "Next")] | //button[contains(text(), "Next")] | //a[contains(text(), "Next")]')
+            )
+        )
+        next_button.click()
+        print("Clicked the Next button.")
+        time.sleep(2)  # Wait for page to load after click
+    except TimeoutException:
+        print("Timeout: Could not find or click the Next button.")
+
+finally:
+    # Close the browser
+    driver.quit()
+
+
+try:
+        # Wait for the page number element to be present
+        page_element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, '//span[@class="whitespace-nowrap" and contains(text(), " of ")]'))
+        )
+
+        # Extract the text (e.g., "Page 1 of 110")
+        page_text = page_element.text
+
+        # Split the text to get current and total page numbers
+        # Assuming format is "Page X of Y" or "X of Y"
+        page_info = page_text.split(" of ")
+        current_page = int(page_info[0].replace("Page ", "").strip())
+        total_pages = int(page_info[1].strip())
+
+        # Print the results
+        print(f"Current Page: {current_page} / {total_pages}")
+except Exception as e:
+        print(e)
+
+
+
+
+
+
+
+
+
+# Try to find and click the Next button
+try:
+        next_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable(
+                (By.XPATH, '//span[@data-svelte-h="svelte-1hxgo6f" and contains(text(), "Next")]')
+            )
+        )
+        # Scroll to the button to ensure it's in view
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", next_button)
+        time.sleep(0.5)  # Brief wait for scroll to settle
+
+        # Attempt standard click
+        try:
+            next_button.click()
+            print("Clicked the Next button (standard click).")
+        except Exception:
+            print("Standard click intercepted. Trying JavaScript click...")
+
+            # Fallback to JavaScript click
+            driver.execute_script("arguments[0].click();", next_button)
+            print("Clicked the Next button (JavaScript click).")
+        time.sleep(2)  # Wait for page to load after click
+
+except TimeoutException:
+        print("Timeout: Could not find the Next button.")
+except Exception as e:
+        print(f"Click intercepted even after scroll: {e}")
+        # Check for overlay
+        try:
+            overlay = driver.find_element(By.XPATH, '//div[contains(@class, "px-5 py-6 xs:px-8 xs:py-8 md:px-28 md:py-20")]')
+            print("Found potential overlay. Attempting to hide it...")
+            driver.execute_script("arguments[0].style.display = 'none';", overlay)
+            # Retry click
+            next_button.click()
+            print("Clicked the Next button after hiding overlay.")
+            time.sleep(2)
+        except NoSuchElementException:
+            print("No overlay found or unable to hide it.")
+
+
 """
