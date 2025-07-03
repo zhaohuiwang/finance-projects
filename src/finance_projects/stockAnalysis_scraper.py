@@ -15,6 +15,9 @@ import time
 import logging
 # logging.basicConfig(level=logging.DEBUG)
 
+# Base URL
+base_url = "https://stockanalysis.com/trending/"
+
 # Set up Chrome options
 options = Options()
 options.add_argument("--headless=new")  # New headless mode
@@ -44,14 +47,6 @@ try:
 except Exception as e:
     print(f"Error initializing ChromeDriver: {e}")
     exit()
-
-
-# Base URL
-base_url = "https://stockanalysis.com/trending/"
-
-# List to store all table data
-all_rows = []
-headers = []
 
 
 def scrape_page():
@@ -148,54 +143,73 @@ def scrape_page_mtb():
 
 
 
+# List to store all table data
+all_rows = []
+headers = []
+
+
 # Navigate to the base URL
 driver.get(base_url)
 time.sleep(2)  # Wait for initial page load
 
 # Scrape the first page
-page_headers, page_rows = scrape_page()
-if page_headers:
-    headers = page_headers
-    all_rows.extend(page_rows)
-else:
-    print("Failed to scrape the first page. Exiting.")
-    driver.quit()
-    exit()
-
-# Loop through pages by clicking the "Next" button
 page_count = 1
 
+try:
+    page_headers, page_rows = scrape_page()
+except Exception as e:
+    print(e)
+    driver.quit()
+    exit()
+else:
+    if page_headers and page_rows:
+        headers = page_headers
+        all_rows.extend(page_rows)
+        print(f"{len(page_rows)} rows found on page: {page_count}.")
 
+# Loop through pages by clicking the "Next" button
 while True:
-     try:
-         # Find the "Next" button: Right click > Elements >
-         # <span class="hidden sm:inline" data-svelte-h="svelte-1hxgo6f">Next</span>
-         next_button = driver.find_element(By.XPATH, "//span[@class='hidden sm:inline' and text()='Next']")
-     except Exception as e:
-         print(e)
-         break
-     if (not next_button.is_enabled()) or ("disabled" in next_button.get_attribute("class")):
-         print("No more pages to scrape. Stopping.")
-         break
-     
-     time.sleep(random.uniform(2, 4))  # Wait for the next page to load
-     
-     try:    
-         # Click the "Next" button
-         next_button.click()
-         page_count += 1
-         print(f"Scraping page {page_count}")
-         # Scrape the new page
-         page_headers, page_rows = scrape_page()
-         if page_rows:
-             all_rows.extend(page_rows)
-         else:
-             print("No data found on this page. Stopping.")
-             break
-     except Exception as e:
-         print(f"No more pages or Error occurred: {e}")
-         break
+    page_count += 1
+    try:
+        # Find the "Next" button: Right click > Elements >
+        # <span class="hidden sm:inline" data-svelte-h="svelte-1hxgo6f">Next</span>
+        next_button = driver.find_element(
+            By.XPATH,
+            "//span[@class='hidden sm:inline' and text()='Next']"
+            )
+        print(f"Moving to page {page_count} driver.find_element")
+        
+    except Exception as e:
+        print(e)
+        try:
+            next_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, '//span[@class="hidden sm:inline" and contains(text(), "Next")]'))
+            )
+            print(f"Moving to page {page_count} WebDriverWait")
+        except Exception as e:
+            print(e)
+            break
 
+    if (not next_button.is_enabled()) or ("disabled" in next_button.get_attribute("class")):
+        print("No more pages to scrape. Stopping.")
+        break
+     
+    time.sleep(random.uniform(2, 4))  # Wait for the next page to load
+     
+    try:    
+        # Click the "Next" button
+        next_button.click()
+
+    except Exception as e:
+        print(f"No more pages or Error occurred: {e}")
+        break
+    else:
+        # Scrape the new page
+        page_headers, page_rows = scrape_page()
+
+        if page_rows:
+            all_rows.extend(page_rows)
+            print(f"{len(page_rows)} rows found on page: {page_count}.")
 
 # Close the driver
 driver.quit()
