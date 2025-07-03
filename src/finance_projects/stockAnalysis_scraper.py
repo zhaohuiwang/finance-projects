@@ -1,10 +1,3 @@
-"""
-Script to pull tabular data from website 
-for example
-https://stockanalysis.com/
-"""
-
-
 import os
 
 from selenium import webdriver
@@ -170,33 +163,36 @@ else:
 
 # Loop through pages by clicking the "Next" button
 page_count = 1
-while True:
-    try:
-        # Find the "Next" button: Right click > Elements >
-        # <span class="hidden sm:inline" data-svelte-h="svelte-1hxgo6f">Next</span>
-        next_button = driver.find_element(By.XPATH, "//span[@class='hidden sm:inline' and text()='Next']")
 
-        if (not next_button.is_enabled()) or ("disabled" in next_button.get_attribute("class")):
-            print("No more pages to scrape. Stopping.")
-            break
-        
-        # Click the "Next" button
-        next_button.click()
-        time.sleep(2)  # Wait for the next page to load
-        page_count += 1
-        print(f"Scraping page {page_count}")
-        
-        # Scrape the new page
-        page_headers, page_rows = scrape_page()
-        if page_rows:
-            all_rows.extend(page_rows)
-        else:
-            print("No data found on this page. Stopping.")
-            break
-    
-    except Exception as e:
-        print(f"No more pages or error occurred: {e}")
-        break
+
+while True:
+     try:
+         # Find the "Next" button: Right click > Elements >
+         # <span class="hidden sm:inline" data-svelte-h="svelte-1hxgo6f">Next</span>
+         next_button = driver.find_element(By.XPATH, "//span[@class='hidden sm:inline' and text()='Next']")
+     except Exception as e:
+         print(e)
+         break
+     if (not next_button.is_enabled()) or ("disabled" in next_button.get_attribute("class")):
+         print("No more pages to scrape. Stopping.")
+         break
+     try:    
+         # Click the "Next" button
+         next_button.click()
+         time.sleep(random.uniform(2, 4))  # Wait for the next page to load
+         page_count += 1
+         print(f"Scraping page {page_count}")
+         # Scrape the new page
+         page_headers, page_rows = scrape_page()
+         if page_rows:
+             all_rows.extend(page_rows)
+         else:
+             print("No data found on this page. Stopping.")
+             break
+     except Exception as e:
+         print(f"No more pages or Error occurred: {e}")
+         break
+
 
 # Close the driver
 driver.quit()
@@ -231,6 +227,5 @@ import pandas as pd
 import sys
 
 # Setup client
-finnhub_client = finnhub.Client(api_key="d1ikds9r01qhbuvqiii0d1ikds9r01qhbuvqiiig")
+finnhub_client = finnhub.Client(api_key="...")
 """
-
