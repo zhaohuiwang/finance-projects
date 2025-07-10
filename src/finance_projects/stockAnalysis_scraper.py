@@ -10,11 +10,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException, NoSuchWindowException, NoAlertPresentException
 import time
 
-# URL to scrape (e.g., stockanalysis.com or similar)
+# URL to scrape
 url = "https://stockanalysis.com/trending/"
 
 # Set up Chrome WebDriver
 driver = webdriver.Chrome()
+# to open a chrome browser from a terminal, $ google-chrome
 
 driver.get(url)
 
@@ -40,7 +41,6 @@ while True:
         total_pages = int(page_info.split("of")[1].strip())
 
         print(f"Current Page (from HTML): {current_page} / {total_pages}")
-        
     except Exception as e:
         print(f"Errors from finding pagination element: {e}")
 
@@ -52,33 +52,8 @@ while True:
         for table in tables:
             tables_data.append(table.get_attribute("outerHTML"))
     except Exception as e:
-        print("Error from extracting tables: {e}")
-        '''
-        # Handle random popups (windows or alerts)
-        original_window = driver.current_window_handle
-        for window_handle in driver.window_handles:
-            if window_handle != original_window:
-                driver.switch_to.window(window_handle)
-                try:
-                    close_button = WebDriverWait(driver, 2).until(
-                        EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'close') or text()='Close' or text()='Accept']"))
-                    )
+        print("Errors from extracting tables: {e}")
 
-                    close_button.click()
-                except (TimeoutException, ElementClickInterceptedException):
-                    driver.close()  # Close the popup window if no close button
-                driver.switch_to.window(original_window)
-                time.sleep(1)  # Wait after closing popup
-        
-        # Handle JavaScript alerts
-        try:
-            alert = driver.switch_to.alert
-            print(alert)
-            alert.dismiss()  # Dismiss the alert
-            time.sleep(1)
-        except NoAlertPresentException:
-            pass
-        '''
     try:
         # Find and click "Next" button
         next_button = WebDriverWait(driver, 10).until(
@@ -87,7 +62,7 @@ while True:
         driver.execute_script("arguments[0].scrollIntoView(true);", next_button)
         time.sleep(1)
     except Exception as e:
-        print(f"Error from finding the Next button: {e}")
+        print(f"Errors from finding the Next button: {e}")
 
     try:
         # Attempt standard click
@@ -110,16 +85,15 @@ while True:
             # Wait for tables to load and extract them
             WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.TAG_NAME, "table")))
             tables = driver.find_elements(By.TAG_NAME, "table")
-
             for table in tables:
                 tables_data.append(table.get_attribute("outerHTML"))
         except Exception as e:
-            print("Error from extracting tables: {e}")
+            print("Errors from extracting tables: {e}")
         finally:
             break
 
 # Close the browser
-#driver.quit()
+driver.quit()
 
 # Create an empty list to store the DataFrames
 df_list = []
@@ -129,7 +103,8 @@ for html_table in tables_data:
     df = pd.read_html(html_table)[0]  # [0] is used to select the first (and likely only) table from the HTML
     df_list.append(df)
 
-data = pd.concat(df_list).drop_duplicates(subset=['Symbol'])
+data = pd.concat(df_list, ignore_index=True).drop_duplicates(subset=['Symbol']).reset_index(drop=True)
+# Possible page duplications from the same HTML page (Mostly page 1)
 
 
 ''''
