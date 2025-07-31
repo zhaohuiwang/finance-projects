@@ -32,7 +32,7 @@ import dotenv
 import schwabdev
 
 dotenv.load_dotenv()
-client = schwabdev.Client(os.getenv("APP_KEY"), os.getenv("APP_SECRET"))
+client = schwabdev.Client(os.getenv("SCHWAB_APP_KEY"), os.getenv("SCHWAB_APP_SECRET"))
 
 
 # SSL (Secure Sockets Layer) certificates, also known as TLS (Transport Layer Security) certificates
