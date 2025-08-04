@@ -1,0 +1,3 @@
+[submodule "Schwabdev"]
+	path = Schwabdev
+	url = git@github.com:tylerebowers/Schwabdev.git
