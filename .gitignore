@@ -1,0 +1,10 @@
+# Asterisk (*), Matches zero or more characters, excluding the directory separator (/). `.env` file often contains sensitive configuration data, such as API keys, database credentials, or other environment-specific settings. Here `*.env` ignores any file with the .env extension, such as .env, or prod.env (git will NOT even track them. You may still force git to operate them like `git add -f .env`)
+*.env
+*tokens.json
+
+*.pyc
+__pycache__/
+# Negates a pattern (!), files or directories that would otherwise be ignored by a preceding pattern will be included. For example `!.env.example`
+
+
+# When using command like `git add *` in Bash or other shells that interpret * as a wildcard, these shell typically do not expand * to include hidder files (with a leadding dot).  You can use `git add .` or explicitly add a hidden file (e.g. `git add .env` if it does not match specified pattern in the .gitignore file) to add all changes. But Windows non-Bash interpreters might handle the wildcards differently, so always try `git add *` or `git add .` followed by `git status` to check/confirm what files were staged. `git reset` to remove them from the staging area. 
