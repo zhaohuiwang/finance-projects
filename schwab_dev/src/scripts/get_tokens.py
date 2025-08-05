@@ -107,7 +107,9 @@ headers = {
     "Content-Type": "application/x-www-form-urlencoded"
 }
 payload = {
+    # gets access and refresh tokens using authorization code
     "grant_type": "authorization_code",
+    #'grant_type': 'refresh_token', # refreshes the access token
     "code": auth_code,
     "redirect_uri": cfg.urls.callback_url
 }
