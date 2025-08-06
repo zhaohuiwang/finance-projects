@@ -10,7 +10,7 @@ from easydict import EasyDict
 import schwabdev 
 
 dotenv_path="/mnt/e/zhaohuiwang/dev/finance-projects/.env"
-#dotenv_path="/Users/zhaohuiwang/dev/finance-projects/.env"
+dotenv_path="/Users/zhaohuiwang/dev/finance-projects/.env"
 
 ### Authorization
 # Option I: input credential directly into the CLient()
