@@ -21,3 +21,6 @@ Version Control: Use .gitignore to exclude `.pyc` and `__pycache__` from Git.
 ```
 
 Without `__init__.py`, I can still run the above command as a module. 
+
+### References
+- [Github - Python for Algorithmic Trading Cookbook](https://github.com/PacktPublishing/Python-for-Algorithmic-Trading-Cookbook)

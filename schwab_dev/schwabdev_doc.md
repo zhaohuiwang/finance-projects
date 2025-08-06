@@ -31,10 +31,17 @@ Schwab employs the OAuth 2 protocol to secure services from unauthorized access,
 
 
 #### Sensitive environment variables
+- First create a `.env` copy from the example (plain text), `$ cp .env.example .env`
+- Then replace with your own credentials (KEY=Value one item per line)
+- Preferred: keep the `.env` file in project root dir or preferred working dir
+- `python-dotenv` search order: Explicit path if specified > current working dir > Parent dirs, recursively searches partent dirs up to the root of the filesystem. `load_dotenv()` loads environment variables from a `.env` file into the system's environment variables making them accessable via `os.getenv('KEY')`. `dotenv_values()` parses a `.env` file and returns a dictionary containing the key-value pairs of environment variables defined in the file, without modifying the system's environment variables. `find_dotenv()` searches for a `.env` file and returns the path to the first .env file it finds, otherwise an empty string.
+- To avoid exposing sensitive information, exclude it from version control `echo "*.env" >> .gitignore`
+
 ```bash
 cp .env.example .env
 chmod 600 .env          # makes the file readable/writable only by the owner
 echo "*.env" >> .gitignore
+# python-dotenv search order: Explicit path if specified > current working dir > Parent dirs, recursively searches partent dirs up to the root of the filesystem.
 ```
 The 600 in `chmod 600 .env` is an octal representation of the permissions. In this notation, permissions are broken down for three categories: owner, group, and others.
 - The first digit (6) represents the owner's permissions. In octal, 6 is the sum of 4 (read) and 2 (write), meaning the owner has both read and write access.
@@ -142,8 +149,80 @@ class Tokens:
 class Client:
     def __init__():
         """"Initialize a client to access the Schwab API.""" 
-    
+    def _params_parser(self, params: dict):
+        """ Removes None (null) values """
+    def _time_convert(self, dt=None, format: str | TimeFormat=TimeFormat.ISO_8601) -> str | int | None:
+        """ Convert time to the correct format, passthrough if a string, preserve None if None for params parser """
     
 
+    _base_api_url = "https://api.schwabapi.com"
 
+    # GET, account numbers, all the linked accounts and a specific account hash
+    f"{self._base_api_url}/trader/v1/accounts/accountNumbers", headers, timeout
+    f"{self._base_api_url}/trader/v1/accounts/", headers, params, timeout
+    f"{self._base_api_url}/trader/v1/accounts/{accountHash}", headers, params, timeout
+
+    
+    # POST (place an order), PUT (replace an order) - why json-order?
+    f"{self._base_api_url}/trader/v1/accounts/{accountHash}/orders/{orderId}", headers, json=order, timeout
+    # GET (order details), DELETE (cancel an order),
+    f"{self._base_api_url}/trader/v1/accounts/{accountHash}/orders/{orderId}", headers, timeout
+
+    # GET all transactions
+    f"{self._base_api_url}/trader/v1/accounts/{accountHash}/transactions", headers, params, timeout
+    # GET a specific transaction
+    f"{self._base_api_url}/trader/v1/accounts/{accountHash}/transactions/{transactionId}",headers, timeout
+    # GET user preference information
+    f"{self._base_api_url}/trader/v1/userPreference", headers, timeout
+
+
+    # GET quotes for a list of stocks
+    f"{self._base_api_url}/marketdata/v1/quotes", headers, params, timeout
+    # GET Option Chain
+    f"{self._base_api_url}/marketdata/v1/chains", headers, timeout
+    # GET an option expiration chain
+    f"{self._base_api_url}/marketdata/v1/expirationchain", headers, params, timeout
+    # GET price history for a ticker
+    f"{self._base_api_url}/marketdata/v1/pricehistory", headers, params, timeout
+    # GET movers in a specific index and direction
+    f"{self._base_api_url}/marketdata/v1/movers/{symbol}", headers, params, timeout
+
+    # GET Market Hours, or a specific  market id ("equity"|"option"|"bond"|"future"|"forex")
+    f"{self._base_api_url}/marketdata/v1/markets", headers, params, timeout
+    f"{self._base_api_url}/marketdata/v1/markets/{market_id}", headers, params, timeout
+
+    # GET instruments for a list of symbols, or a single cusip
+    f"{self._base_api_url}/marketdata/v1/instruments", headers, params, timeout
+    f"{self._base_api_url}/marketdata/v1/instruments/{cusip_id}", headers, timeout
+
+```
+
+**Headers Only**: Headers are always required because they handle authentication (Authorization Header) and specify the format of the request/response (Content-Type Header). Used for simple GET requests (e.g., listing all accounts) where the access token in the headers is sufficient to identify the user and no additional data is needed.
+**Headers + Params**: Required when the endpoint needs specific data, such as an account ID, additional fields (e.g., positions), or a payload for actions like placing orders.
+
+```python
+url = "https://api.schwabapi.com/trader/v1/accounts/{accountHash}"
+headers = {
+    "Authorization": "Bearer {access_token}",
+    "Content-Type": "application/json"
+}
+params = {"fields": "positions"}  # Optional query params
+response = requests.get(url, headers=headers, params=params)
+
+
+url = "https://api.schwabapi.com/trader/v1/accounts/{accountHash}/orders"
+headers = {
+    "Authorization": "Bearer {access_token}",
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+}
+payload = {
+    "orderType": "LIMIT",
+    "session": "NORMAL",
+    "duration": "DAY",
+    "symbol": "AAPL",
+    "quantity": 10,
+    "price": "150.00"
+}
+response = requests.post(url, headers=headers, json=payload)
 ```

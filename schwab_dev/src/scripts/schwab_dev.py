@@ -1,7 +1,3 @@
-# Path to venv
-# On mac /Users/zhaohuiwang/dev/venvs/uv-venvs/pytorch/.venv/bin/python
-# On WSL /mnt/e/zhaohuiwang/dev/venvs/uv-venvs/pytorch/.venv/bin/python
-
 
 import os
 
@@ -9,18 +5,16 @@ import dotenv
 from easydict import EasyDict
 import schwabdev 
 
-dotenv_path="/mnt/e/zhaohuiwang/dev/finance-projects/.env"
-dotenv_path="/Users/zhaohuiwang/dev/finance-projects/.env"
 
 ### Authorization
 # Option I: input credential directly into the CLient()
 # Option II: The function `load_dotenv`` loads environment variables from a .env file into your application's environment, making them accessible via os.getenv() or os.environ.By default, it looks for .env in the current directory.
 dotenv.load_dotenv(
-    dotenv_path=dotenv_path,
+    #dotenv_path=dotenv_path,
     override=True,
     verbose=True
     )
-
+print(f"Environment variables are loaded from {dotenv.find_dotenv()}")
 
 client = schwabdev.Client(
     app_key=os.getenv('APP_KEY'),
