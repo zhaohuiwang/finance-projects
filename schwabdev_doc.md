@@ -21,34 +21,6 @@ Token URL: https://api.schwabapi.com/v1/oauth/token
 Flow: authorizationCode
 
 client_id: ******
-client_secret: ******
-
-
-
-Schwab employs the OAuth 2 protocol to secure services from unauthorized access, following the Three-Legged processing Workflow (). 
-
-
-
-
-#### Sensitive environment variables
-- First create a `.env` copy from the example (plain text), `$ cp .env.example .env`
-- Then replace with your own credentials (KEY=Value one item per line)
-- Preferred: keep the `.env` file in project root dir or preferred working dir
-- `python-dotenv` search order: Explicit path if specified > current working dir > Parent dirs, recursively searches partent dirs up to the root of the filesystem. `load_dotenv()` loads environment variables from a `.env` file into the system's environment variables making them accessable via `os.getenv('KEY')`. `dotenv_values()` parses a `.env` file and returns a dictionary containing the key-value pairs of environment variables defined in the file, without modifying the system's environment variables. `find_dotenv()` searches for a `.env` file and returns the path to the first .env file it finds, otherwise an empty string.
-- To avoid exposing sensitive information, exclude it from version control `echo "*.env" >> .gitignore`
-
-```bash
-cp .env.example .env
-chmod 600 .env          # makes the file readable/writable only by the owner
-echo "*.env" >> .gitignore
-# python-dotenv search order: Explicit path if specified > current working dir > Parent dirs, recursively searches partent dirs up to the root of the filesystem.
-```
-The 600 in `chmod 600 .env` is an octal representation of the permissions. In this notation, permissions are broken down for three categories: owner, group, and others.
-- The first digit (6) represents the owner's permissions. In octal, 6 is the sum of 4 (read) and 2 (write), meaning the owner has both read and write access.
-- The second digit (0) represents the group's permissions, meaning the group has no access.
-- The third digit (0) represents "others'" permissions, meaning other users also have no access.
-
-
 A **callback** function, in computer programming, is a function passed as an argument to another function, intended to be executed at a later point in time by that other function. The term "callback" arises from the idea that the function being passed is "called back" by the receiving function after some operation or event has occurred.
 
 In a web application or Client-Server apps (client-server model), the **client** refers to the user's device (like a web browser on a computer or phone) that requests information and interacts with the application. The **server** is the computer that hosts the web application and provides the requested data and functionality. Essentially, the client asks for something, and the server provides it. 
