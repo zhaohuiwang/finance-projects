@@ -31,7 +31,7 @@ def setup_logger(logger_name: str='MyAppLogger', log_file:str='app.log', log_lev
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             datefmt='%m/%d/%Y %I:%M:%S %p'
         )
-        
+
         # Console handler
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(formatter)
@@ -40,7 +40,7 @@ def setup_logger(logger_name: str='MyAppLogger', log_file:str='app.log', log_lev
         # File handler with rotation (max 5MB, keep 5 backups)
         file_handler = RotatingFileHandler(
             log_file,
-            maxBytes=5*1024*1024,
+            maxBytes=50*1024*1024,
             backupCount=5
         )
         file_handler.setFormatter(formatter)
@@ -150,7 +150,6 @@ def monitor_stock_volumes(symbols, interval=60, volume_threshold=1.5):
         logging.error(f"Failed to initialize stock monitoring: {e}")
 
 @click.command()
-@click.argument("name")
 @click.option("--stock_symbols", type=list, default = ["AAPL", "MSFT", "GOOGL"], help="List of stock symbols")
 @click.option("--check_interval", type=int, default=60, help="Tracing time interval in second")
 @click.option("--volume_spike_threshold", type=float, default=1.5, help="Volume spike threshold in times, e.g. 1.5 indicating 50 percent increase in volume considered as a spike")
@@ -158,7 +157,7 @@ def main(stock_symbols, check_interval, volume_spike_threshold):
     """ """
     logging = setup_logger(
     logger_name=__name__,
-    log_file=Path(__file__).parent.parent/'logs/app.log'
+    log_file=Path(__file__).parent.parent/'app.log'
     )
 
     logging.info(f"Running at: {Path.cwd()}")
