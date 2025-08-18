@@ -1,28 +1,53 @@
-import yfinance as yf
-import time
+import click
+from dotenv import load_dotenv
 import logging
-# from twilio.rest import Client
-import smtplib
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
+import time
+
+
 from email.mime.text import MIMEText
 import requests
+import smtplib
+# from twilio.rest import Client
+import yfinance as yf
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# include all credentials in `.evn` file, in the current dir or the parent
+load_dotenv()
 
-# # Twilio configuration (for SMS)
-# TWILIO_ACCOUNT_SID = "your_twilio_account_sid"
-# TWILIO_AUTH_TOKEN = "your_twilio_auth_token"
-# TWILIO_PHONE_NUMBER = "your_twilio_phone_number"
-# YOUR_PHONE_NUMBER = "your_phone_number"
+def setup_logger(logger_name: str='MyAppLogger', log_file:str='app.log', log_level=logging.DEBUG):
+    """
+    Create a centralized logger configuration.
+    List of logging levels: DEBUG (10) > INFO (20) > WARNING (30) > ERROR (40) > CRITICAL (50)
+    """
+    # Create logger
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(log_level)
+    
+    # Prevent adding handlers if logger is already configured
+    if not logger.handlers:
+        # Create formatter
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            datefmt='%m/%d/%Y %I:%M:%S %p'
+        )
+        
+        # Console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+        
+        # File handler with rotation (max 5MB, keep 5 backups)
+        file_handler = RotatingFileHandler(
+            log_file,
+            maxBytes=5*1024*1024,
+            backupCount=5
+        )
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+    
+    return logger
 
-# Email configuration (for Gmail)
-EMAIL_ADDRESS = "ezhwang@gmail.com"
-EMAIL_PASSWORD = "amlx ohah wjls ozsy"
-RECIPIENT_EMAIL = "ezhwang@gmail.com"
-
-# Pushover configuration
-PUSHOVER_USER_KEY = "ub8h75wkbpdfb3iia3nhsgd8fx4ge9"
-PUSHOVER_API_TOKEN = "af5ceamcsm5hou6ff8axgbcom6vq6w"
 
 # def send_sms_alert(message):
 #     """Send SMS alert using Twilio."""
@@ -124,10 +149,22 @@ def monitor_stock_volumes(symbols, interval=60, volume_threshold=1.5):
     except Exception as e:
         logging.error(f"Failed to initialize stock monitoring: {e}")
 
-if __name__ == "__main__":
-    # Example usage
-    stock_symbols = ["AAPL", "MSFT", "GOOGL"]  # Replace with desired stock tickers
-    check_interval = 60    # Check every 60 seconds
-    volume_spike_threshold = 1.5  # 50% increase in volume considered a spike
-    
+@click.command()
+@click.argument("name")
+@click.option("--stock_symbols", type=list, default = ["AAPL", "MSFT", "GOOGL"], help="List of stock symbols")
+@click.option("--check_interval", type=int, default=60, help="Tracing time interval in second")
+@click.option("--volume_spike_threshold", type=float, default=1.5, help="Volume spike threshold in times, e.g. 1.5 indicating 50 percent increase in volume considered as a spike")
+def main(stock_symbols, check_interval, volume_spike_threshold):
+    """ """
+    logging = setup_logger(
+    logger_name=__name__,
+    log_file=Path(__file__).parent.parent/'logs/app.log'
+    )
+
+    logging.info(f"Running at: {Path.cwd()}")
+ 
     monitor_stock_volumes(stock_symbols, check_interval, volume_spike_threshold)
+
+if __name__ == "__main__":
+
+    main()
