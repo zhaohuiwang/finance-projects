@@ -1,6 +1,7 @@
 # Asterisk (*), Matches zero or more characters, excluding the directory separator (/). `.env` file often contains sensitive configuration data, such as API keys, database credentials, or other environment-specific settings. Here `*.env` ignores any file with the .env extension, such as .env, or prod.env (git will NOT even track them. You may still force git to operate them like `git add -f .env`)
 *.env
 *tokens.json
+*.log
 
 *.pyc
 __pycache__/
