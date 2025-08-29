@@ -21,6 +21,7 @@ and the `AUTHORIZATION_CODE_GENERATED` from step 1.
 
 The tokens will be save as `../scripts/.tokens.json`
 
+Terminal Code to activate the virtual environment and execute the script as a Python module
 $ source /mnt/e/zhaohuiwang/dev/venvs/uv-venvs/finance/.venv/bin/activate
 python -m schwab_ext.src.scripts.get_tokens
 """
