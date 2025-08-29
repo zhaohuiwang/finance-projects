@@ -21,6 +21,8 @@ and the `AUTHORIZATION_CODE_GENERATED` from step 1.
 
 The tokens will be save as `../scripts/.tokens.json`
 
+$ source /mnt/e/zhaohuiwang/dev/venvs/uv-venvs/finance/.venv/bin/activate
+python -m schwab_ext.src.scripts.get_tokens
 """
 import base64
 import json
@@ -34,14 +36,21 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from urllib.parse import urlparse, parse_qs
-
-from schwab_dev.src.configs.config import MetadataConfigs
-from schwab_dev.src.utils import setup_logger
+from schwab_ext.src.configs.config import MetadataConfigs
+from schwab_ext.src.utils import setup_logger, find_directory
 
 # Logger setup
+# Searches for the first occurrence of 'logs/' dir by traversing up the directory tree. Create one if not found.
+logs_dir = find_directory(target_dir_name="logs")
+if logs_dir:
+    log_fpath = Path(logs_dir)/'app.log'
+else:
+    log_fpath = Path(__file__).parent.parent.parent/'logs/app.log'
+    log_fpath.parent.mkdir(parents=True, exist_ok=True)
+
 logger = setup_logger(
     logger_name=__name__,
-    log_file=Path(__file__).parent.parent.parent/'logs/app.log'
+    log_file=log_fpath
     )
 
 logger.info(f"Running at: {Path.cwd()}")
@@ -134,4 +143,6 @@ if tokens:
     except Exception as e:
         logger.error(f"Error saving tokens to {token_path}: {e}")
 else:
-    logger.info("No tokens to save.")     
+    logger.info("No tokens to save.")
+
+
