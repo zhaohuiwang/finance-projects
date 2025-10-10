@@ -8,6 +8,50 @@ yfinance.download(tickers, start= , end= , ...) only daily prices and can proces
 
 """
 
+# compare hourly data for an individual stock to a main index 
+
+# https://github.com/ranaroussi/yfinance/blob/main/yfinance/tickers.py
+import pandas as pd
+import yfinance as yf
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+tickers = ["^IXIC", "^DJI", "^GSPC", 'NBIS']
+
+price_df = pd.DataFrame()
+for i, ticker in enumerate(tickers):
+
+    data = yf.Ticker(ticker).history(period="1d", interval="30m", prepost=True)
+    #data['High'].reset_index().rename(columns={'High': ticker})
+
+    ticker_price = data['High'].reset_index(drop=True).round(2).rename(ticker)
+    ticker_price.index = data.index.strftime("%H:%M")
+    ticker_price.index.name = None
+
+
+
+    ticker_price_df = ticker_price.to_frame()
+    price_df = pd.concat([price_df, ticker_price_df], axis=1)
+
+inhour_price_df = price_df.loc['09:30':'16:00']
+
+fig, ax1 = plt.subplots(figsize=(8, 5))
+# Plot y1 on the primary axes
+sns.lineplot(x=inhour_price_df.index, y=inhour_price_df['^IXIC'], ax=ax1, color='blue')
+ax1.set_ylabel('NASDAQ', color='blue')
+ax1.tick_params(axis='y', labelcolor='blue')
+# Create a secondary axes (twinx)
+ax2 = ax1.twinx()
+
+# Plot y2 on the secondary axes
+sns.lineplot(x=inhour_price_df.index, y=inhour_price_df['NBIS'], ax=ax2, color='red')
+ax2.set_ylabel('NBIS', color='red')
+ax2.tick_params(axis='y', labelcolor='red')
+
+plt.savefig("price_comp.png")
+plt.close()
+
+
 
 
 import datetime
@@ -24,7 +68,7 @@ day_span = 31
 
 # Set the start and end date
 end_date = datetime.date.today() .strftime("%Y-%m-%d")
-d1 = datetime.date.today() - timedelta(days=day_span)  # timespan of last 5 years
+d1 = datetime.date.today() - datetime.timedelta(days=day_span)
 start_date = d1.strftime("%Y-%m-%d")
 
 
@@ -48,8 +92,6 @@ plt.ylabel('Price', fontsize=14)
 plt.xlabel('Year', fontsize=14)
 plt.grid(which="major", color='k', linestyle='-.', linewidth=0.5)
 plt.show()
-
-
 
 
 
