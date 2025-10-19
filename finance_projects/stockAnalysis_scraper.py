@@ -1,25 +1,66 @@
 
+import dotenv
+import os
 
 import pandas as pd
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException, NoSuchWindowException, NoAlertPresentException
 import time
 
+dotenv.load_dotenv(
+    #dotenv_path=dotenv_path,
+    override=True,
+    verbose=True
+    )
+
 # URL to scrape
-url = "https://stockanalysis.com/trending/"
+url_login = "https://stockanalysis.com/login/"
+#url = "https://stockanalysis.com/trending/"
 url = "https://stockanalysis.com/markets/gainers/"
 
-# Set up Chrome WebDriver
-driver = webdriver.Chrome()
-# to open a chrome browser from a terminal, $ google-chrome
+# Set up the webdriver (e.g., Chrome)
+options = webdriver.ChromeOptions()
+options.add_argument("--disable-blink-features=AutomationControlled")  # Hide automation flag
+driver = webdriver.Chrome(options=options)
+
+
+try:
+    # Navigate to the login page
+    driver.get("https://stockanalysis.com/login/")
+
+    # Wait for and fill email field
+    email_input = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.NAME, "email"))  # Adjust if ID/class differs
+    )
+    email_input.send_keys(os.getenv("SA_EMAIL"))
+
+    # Wait for and fill password field
+    password_input = driver.find_element(By.NAME, "password")  # Adjust selector
+    password_input.send_keys(os.getenv("SA_PASSWORD"))
+
+    # Click the login button
+    login_button = driver.find_element(By.XPATH, "//button[contains(text(), 'Log In')]")  # Adjust
+    login_button.click()
+
+    # Wait for login to complete (e.g., check for a post-login element)
+    time.sleep(3)  # Or use WebDriverWait for a specific element
+
+    # Proceed with scraping or other actions
+    print("Logged in successfully!")
+except Exception as e:
+    print("Errors from log in: {e}")
+
+
+# Wait for login to complete (e.g., check for dashboard or error)
+time.sleep(3)  # Or use WebDriverWait for a post-login element
+
 
 driver.get(url)
-
 tables_data = []
 iteration = 0
 
