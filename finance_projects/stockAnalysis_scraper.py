@@ -12,6 +12,7 @@ import time
 
 # URL to scrape
 url = "https://stockanalysis.com/trending/"
+url = "https://stockanalysis.com/markets/gainers/"
 
 # Set up Chrome WebDriver
 driver = webdriver.Chrome()
