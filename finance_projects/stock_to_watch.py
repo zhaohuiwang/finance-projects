@@ -15,8 +15,9 @@ import pandas as pd
 import yfinance as yf
 import seaborn as sns
 import matplotlib.pyplot as plt
+import xarray as xr
 
-tickers = ["^IXIC", "^DJI", "^GSPC", 'NBIS']
+tickers = ["^IXIC", "^DJI", "^GSPC", 'NBIS', 'CRDW', 'IREN']
 
 price_df = pd.DataFrame()
 for i, ticker in enumerate(tickers):
@@ -81,20 +82,10 @@ for ticker in tickers_list:
                                start_date,
                                end_date)['Close']
     
-# Print first 5 rows of the data
-data.head()
-
-# Plot all the close prices
-data.plot(figsize=(10, 7))
-plt.legend()
-plt.title("Close Price", fontsize=16)
-plt.ylabel('Price', fontsize=14)
-plt.xlabel('Year', fontsize=14)
-plt.grid(which="major", color='k', linestyle='-.', linewidth=0.5)
-plt.show()
 
 
 
+################## yfinance download ##################
 
 from collections import OrderedDict
 import numpy as np
@@ -110,9 +101,78 @@ from datetime import date, timedelta
 
 from src.finance_playground.plot_utils import get_matplotlib_colors, plot_historical_price
 
-end_date = date.today().strftime("%Y-%m-%d")
-d1 = date.today() - timedelta(days=360 * 1)  # timespan of last 5 years
+# yfinance end date is exclusive
+end_date = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+d1 = date.today() - timedelta(days=360 * 1)  # timespan of last 1 years
 start_date = d1.strftime("%Y-%m-%d")
+
+company_symbol = {
+    "Microsoft": "MSFT",
+    "Alphabet": "GOOG",
+    "Meta": "META",
+    "Apple": "AAPL",
+    "Amazon": "AMZN",
+    "Array": "ARRY",
+    "Enphase Energy": "ENPH",
+    "American Airlines": "AAL",
+    "Bayer": "BAYRY",
+    "Kenvue": "KVUE",
+    "Nebius":"NBIS",
+    "CoreWeave":"CRWV",
+    "IREN":"IREN",
+    }
+# Let's call the API & get stock data
+data_od = OrderedDict()
+
+# Assign the ticker/symbol as the Dict key and company name as the name of the level (columns.name) of the corresponding pd.DataFrame.  
+for company, symble in company_symbol.items():
+    data_od[symble] = yf.download(
+        tickers=symble, start=start_date, end=end_date
+    )
+    # Data variable list ['Close', 'High', 'Low', 'Open', 'Volume', 'Date'].
+    # drop the unnecessary column index level   
+    if len(data_od[symble].columns.names) > 1:
+        data_od[symble] = data_od[symble].droplevel(level=1, axis=1)
+        # MultiIndex([...], names=['Price', 'Ticker']) to MultiIndex([...], names='Price')
+        data_od[symble].columns.name = None #company
+
+    # Identify column(s) of datatime64[ns] dtypes
+    dt_sub = data_od[symble].select_dtypes(include=['datetime64[ns]'])
+    # If only 1 column identified as datatimes64[ns] dtypes, set it as the index 
+    if not dt_sub.empty and len(dt_sub.columns) == 1:
+        data_od[symble] = data_od[symble].set_index(dt_sub.columns)
+
+
+# Convert OrderedDict to xarray.Dataset
+dataset_xr = xr.Dataset({
+    ticker: xr.DataArray(
+        df,
+        dims=['Date','metric'],
+        coords={
+            'Date': df.index,
+            'metric': df.columns
+            }
+        # Each dataframe was indexed by 'Date', so 'Date' should be kept here.     
+    )
+    for ticker, df in data_od.items()
+})
+
+# df = dataset_xr['NBIS'].sel(metric=['Close', 'High', 'Low', 'Open', 'Volume']).to_pandas()
+
+
+end_date = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
+d1 = date.today() - timedelta(days=12)  # timespan 12 days
+start_date = d1.strftime("%Y-%m-%d")
+ticker = 'NBIS'
+
+sg_ticker = dataset_xr[ticker].sel(metric='Close', Date=slice(start_date, end_date))
+
+
+sg_ticker.plot()
+plt.title(f'{ticker} High Prices ({start_date} up to {end_date}(Exclusive))')
+plt.show()
+
 
 
 # collect all matplotlib colors
@@ -129,37 +189,11 @@ matplotlib_colors.update(mcolors.XKCD_COLORS)
 matplotlib_colors_list = list(matplotlib_colors.keys())
 matplotlib_colors_list.remove("w")
 
-
-company_symbol = {
-    "Microsoft": "MSFT",
-    "Alphabet": "GOOG",
-    "Meta": "META",
-    "Apple": "AAPL",
-    "Amazon": "AMZN",
-    "Array": "ARRY",
-    "Enphase Energy": "ENPH",
-    "American Airlines": "AAL",
-    "Bayer": "BAYRY",
-    "Kenvue": "KVUE",
-}
-# Let's call the API & get stock data
-price_history = OrderedDict()
-
-for company, symble in company_symbol.items():
-    price_history[company] = yf.download(
-        tickers=symble, start=start_date, end=end_date
-    ).reset_index()
-
-    # drop the unnecessary column index level   
-    if len(price_history.columns.names) > 1:
-        price_history.droplevel(level=1, axis=1)
-
-    price_history[company].name = company
-
-
-
 plot_historical_price(company_symbol,price_history)
 plt.show()
+
+
+################## nasdaqdatalink download ##################
 
 import nasdaqdatalink
 mydata = nasdaqdatalink.get("FRED/GDP")
@@ -178,7 +212,7 @@ df.head()
 df = web.DataReader('005930', 'naver', start='2019-09-10', end='2019-10-09')
 
 
-
+################## polygon download ##################
 from polygon import RESTClient
 client = RESTClient(api_key="iNopt7F73wQJt7Nh6_BkTydndWop42C5")
 
