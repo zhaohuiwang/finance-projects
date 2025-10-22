@@ -8,6 +8,219 @@ yfinance.download(tickers, start= , end= , ...) only daily prices and can proces
 
 """
 
+
+################## yfinance download ##################
+
+from collections import OrderedDict
+import numpy as np
+
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+
+import yfinance as yf
+from datetime import date, timedelta
+import xarray as xr
+
+#from src.finance_playground.plot_utils import get_matplotlib_colors, plot_historical_price
+
+# yfinance end date is exclusive
+end_date = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+d1 = date.today() - timedelta(days=360 * 1)  # timespan of last 1 years
+start_date = d1.strftime("%Y-%m-%d")
+
+indices_ticker = {
+    "Nasdaq": "^IXIC",
+    "S&P 500":"^GSPC",
+    "DJIA":"^DJI"}
+
+company_ticker = {
+    "Microsoft": "MSFT",
+    "Alphabet": "GOOG",
+    "Meta": "META",
+    "Apple": "AAPL",
+    "Amazon": "AMZN",
+    "Array": "ARRY",
+    "Enphase Energy": "ENPH",
+    "American Airlines": "AAL",
+    "Bayer": "BAYRY",
+    "Kenvue": "KVUE",
+    "Nebius":"NBIS",
+    "CoreWeave":"CRWV",
+    "IREN":"IREN",
+    }
+
+# tickers = indices_ticker.update(company_ticker) # Appends the righ to the left
+tickers = {**indices_ticker, **company_ticker}
+
+tickers = list(tickers.values())
+
+# Instantiate an Ordered Dict to hold stock data as ticker:data pair  
+data_dict = OrderedDict()
+
+if isinstance(tickers, dict):
+    # Assign the ticker/symbol as the Dict key and company name as the name of the level (columns.name) of the corresponding pd.DataFrame.  
+    for company, symble in tickers.items():
+        data_dict[symble] = yf.download(
+            tickers=symble, start=start_date, end=end_date
+        )
+        # Data variable list ['Close', 'High', 'Low', 'Open', 'Volume', 'Date'].
+        # drop the unnecessary column index level   
+        if len(data_dict[symble].columns.names) > 1:
+            data_dict[symble] = data_dict[symble].droplevel(level=1, axis=1)
+            # MultiIndex([...], names=['Price', 'Ticker']) to MultiIndex([...], names='Price')
+            data_dict[symble].columns.name = None
+        else:
+            pass
+
+        # By default, yf.download() returns a DataFrame indexed by Datetime.
+        if isinstance(data_dict[symble].index, pd.DatetimeIndex):
+            pass
+        else:
+            # Identify column(s) of datatime64[ns] dtypes
+            dt_sub = data_dict[symble].select_dtypes(include=['datetime64[ns]'])
+            # .select_dtypes() check over all columns and the index
+            # If only 1 identified as datatimes64[ns] dtypes, set it as the index
+            if not dt_sub.empty and len(dt_sub.columns) == 1:
+                data_dict[symble] = data_dict[symble].set_index(dt_sub.columns)
+            else:
+                print("Check the time variable(s) in the download data.")
+elif isinstance(tickers, list):
+    # Assign the ticker/symbol as the Dict key and company name as the name of the level (columns.name) of the corresponding pd.DataFrame.  
+    for symble in tickers:
+        data_dict[symble] = yf.download(
+            tickers=symble, start=start_date, end=end_date
+        )
+        # Data variable list ['Close', 'High', 'Low', 'Open', 'Volume', 'Date'].
+        # drop the unnecessary column index level   
+        if len(data_dict[symble].columns.names) > 1:
+            data_dict[symble] = data_dict[symble].droplevel(level=1, axis=1)
+            # MultiIndex([...], names=['Price', 'Ticker']) to MultiIndex([...], names='Price')
+            data_dict[symble].columns.name = None
+        else:
+            pass
+        # By default, yf.download() returns a DataFrame indexed by Datetime.
+        if isinstance(data_dict[symble].index, pd.DatetimeIndex):
+            pass
+        else:
+            # Identify column(s) of datatime64[ns] dtypes
+            dt_sub = data_dict[symble].select_dtypes(include=['datetime64[ns]'])
+            # .select_dtypes() check over all columns and the index
+            # If only 1 identified as datatimes64[ns] dtypes, set it as the index
+            if not dt_sub.empty and len(dt_sub.columns) == 1:
+                data_dict[symble] = data_dict[symble].set_index(dt_sub.columns)
+            else:
+                print("Check the time variable(s) in the download data.")
+else:
+    pass
+
+# Convert OrderedDict to xarray.Dataset
+dataset_xr = xr.Dataset({
+    ticker: xr.DataArray(
+        df,
+        dims=['Date','metric'],
+        coords={
+            'Date': df.index,
+            'metric': df.columns
+            }
+        # Each dataframe was indexed by 'Date', so 'Date' should be kept here.     
+    )
+    for ticker, df in data_dict.items()
+})
+
+
+# Metric variables ['Close', 'High', 'Low', 'Open', 'Volume']. Select one.
+metric_v = 'Close'
+
+# Ticker(s) to compare or plot 
+ticker = ['^IXIC','NBIS']
+# ticker = 'NBIS' # after .sel() returns xarray.DataArray which can be ploted directly
+# ticker = ['NBIS'] # after .sel() returns xarray.Dataset
+
+# Select a date range, the number of days back from today 
+day_span = 12
+
+end_date = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
+d1 = date.today() - timedelta(days=day_span)
+start_date = d1.strftime("%Y-%m-%d")
+
+# Select a subset based on ticker, metric and time slice.
+dataset_xr_sub = dataset_xr[ticker].sel(metric=metric_v, Date=slice(start_date, end_date))
+# dataset_xr_sub = dataset_xr[ticker].sel(metric=['Close', 'High', 'Low', 'Open', 'Volume']).to_pandas()
+
+
+# Plot a single stock or side-by-side with an index
+if isinstance(ticker, list) and len(ticker) == 2:   # side-by-side
+    # Create a figure and the primary axes
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+
+    # Plot the first series on the primary y-axis (left)
+    ax1.plot(dataset_xr_sub['Date'], dataset_xr_sub[ticker[0]], linestyle='--', color='blue', label=ticker[0])
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel(ticker[0], color='blue')
+    ax1.tick_params(axis='y', labelcolor='blue')
+
+    # Create a secondary y-axis using twinx()
+    ax2 = ax1.twinx()
+
+    # Plot the second series on the secondary y-axis (right)
+    ax2.plot(dataset_xr_sub['Date'], dataset_xr_sub[ticker[1]], color='red', label=ticker[1])
+    ax2.set_ylabel(ticker[1], color='red')
+    ax2.tick_params(axis='y', labelcolor='red')
+
+    # Add a title and legend
+    plt.title(f'Daily [{metric_v}] movement for {ticker[0]} and {ticker[1]}')
+    fig.legend(loc='upper left', bbox_to_anchor=(0.1, 0.9)) # Place legend for both series
+    plt.show()
+
+elif isinstance(ticker, list) and len(ticker) == 1: # individual
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+
+    # Plot the first series on the primary y-axis (left)
+    ax1.plot(dataset_xr_sub['Date'], dataset_xr_sub[ticker[0]], color='blue', label=ticker[0])
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel(ticker[0], color='blue')
+    ax1.tick_params(axis='y', labelcolor='blue')
+    # Add a title
+    plt.title(f'Daily [{metric_v}] movement for {ticker[0]}')
+    plt.show()
+
+else: # isinstance(ticker, string)
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+
+    # Plot the first series on the primary y-axis (left)
+    ax1.plot(dataset_xr_sub['Date'], dataset_xr_sub, color='blue', label=ticker)
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel(ticker, color='blue')
+    ax1.tick_params(axis='y', labelcolor='blue')
+    # Add a title
+    plt.title(f'Daily [{metric_v}] movement for {ticker}')
+    plt.show()
+
+
+
+
+
+
+# collect all matplotlib colors
+matplotlib_colors = OrderedDict()
+# these colors can be called with a single character
+matplotlib_colors.update(mcolors.BASE_COLORS)
+# the default color cycle colors
+matplotlib_colors.update(mcolors.TABLEAU_COLORS)
+# named colors also recognized in css
+matplotlib_colors.update(mcolors.CSS4_COLORS)
+# named colors from the xkcd survey
+matplotlib_colors.update(mcolors.XKCD_COLORS)
+
+matplotlib_colors_list = list(matplotlib_colors.keys())
+matplotlib_colors_list.remove("w")
+
+plot_historical_price(company_symbol,price_history)
+plt.show()
+
 # compare hourly data for an individual stock to a main index 
 
 # https://github.com/ranaroussi/yfinance/blob/main/yfinance/tickers.py
@@ -82,115 +295,6 @@ for ticker in tickers_list:
                                start_date,
                                end_date)['Close']
     
-
-
-
-################## yfinance download ##################
-
-from collections import OrderedDict
-import numpy as np
-
-import matplotlib.colors as mcolors
-import matplotlib.pyplot as plt
-import pandas as pd
-import seaborn as sns
-
-import yfinance as yf
-from datetime import date, timedelta
-
-
-from src.finance_playground.plot_utils import get_matplotlib_colors, plot_historical_price
-
-# yfinance end date is exclusive
-end_date = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
-
-d1 = date.today() - timedelta(days=360 * 1)  # timespan of last 1 years
-start_date = d1.strftime("%Y-%m-%d")
-
-company_symbol = {
-    "Microsoft": "MSFT",
-    "Alphabet": "GOOG",
-    "Meta": "META",
-    "Apple": "AAPL",
-    "Amazon": "AMZN",
-    "Array": "ARRY",
-    "Enphase Energy": "ENPH",
-    "American Airlines": "AAL",
-    "Bayer": "BAYRY",
-    "Kenvue": "KVUE",
-    "Nebius":"NBIS",
-    "CoreWeave":"CRWV",
-    "IREN":"IREN",
-    }
-# Let's call the API & get stock data
-data_od = OrderedDict()
-
-# Assign the ticker/symbol as the Dict key and company name as the name of the level (columns.name) of the corresponding pd.DataFrame.  
-for company, symble in company_symbol.items():
-    data_od[symble] = yf.download(
-        tickers=symble, start=start_date, end=end_date
-    )
-    # Data variable list ['Close', 'High', 'Low', 'Open', 'Volume', 'Date'].
-    # drop the unnecessary column index level   
-    if len(data_od[symble].columns.names) > 1:
-        data_od[symble] = data_od[symble].droplevel(level=1, axis=1)
-        # MultiIndex([...], names=['Price', 'Ticker']) to MultiIndex([...], names='Price')
-        data_od[symble].columns.name = None #company
-
-    # Identify column(s) of datatime64[ns] dtypes
-    dt_sub = data_od[symble].select_dtypes(include=['datetime64[ns]'])
-    # If only 1 column identified as datatimes64[ns] dtypes, set it as the index 
-    if not dt_sub.empty and len(dt_sub.columns) == 1:
-        data_od[symble] = data_od[symble].set_index(dt_sub.columns)
-
-
-# Convert OrderedDict to xarray.Dataset
-dataset_xr = xr.Dataset({
-    ticker: xr.DataArray(
-        df,
-        dims=['Date','metric'],
-        coords={
-            'Date': df.index,
-            'metric': df.columns
-            }
-        # Each dataframe was indexed by 'Date', so 'Date' should be kept here.     
-    )
-    for ticker, df in data_od.items()
-})
-
-# df = dataset_xr['NBIS'].sel(metric=['Close', 'High', 'Low', 'Open', 'Volume']).to_pandas()
-
-
-end_date = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
-d1 = date.today() - timedelta(days=12)  # timespan 12 days
-start_date = d1.strftime("%Y-%m-%d")
-ticker = 'NBIS'
-
-sg_ticker = dataset_xr[ticker].sel(metric='Close', Date=slice(start_date, end_date))
-
-
-sg_ticker.plot()
-plt.title(f'{ticker} High Prices ({start_date} up to {end_date}(Exclusive))')
-plt.show()
-
-
-
-# collect all matplotlib colors
-matplotlib_colors = OrderedDict()
-# these colors can be called with a single character
-matplotlib_colors.update(mcolors.BASE_COLORS)
-# the default color cycle colors
-matplotlib_colors.update(mcolors.TABLEAU_COLORS)
-# named colors also recognized in css
-matplotlib_colors.update(mcolors.CSS4_COLORS)
-# named colors from the xkcd survey
-matplotlib_colors.update(mcolors.XKCD_COLORS)
-
-matplotlib_colors_list = list(matplotlib_colors.keys())
-matplotlib_colors_list.remove("w")
-
-plot_historical_price(company_symbol,price_history)
-plt.show()
 
 
 ################## nasdaqdatalink download ##################
