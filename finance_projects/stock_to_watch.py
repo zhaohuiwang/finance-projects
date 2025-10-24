@@ -131,11 +131,34 @@ dataset_xr = xr.Dataset({
 })
 
 
-# Metric variables ['Close', 'High', 'Low', 'Open', 'Volume']. Select one.
+# Set metric variable(s) and ticker(s): a list or a single pick in string 
 metric_v = 'Close'
+metric_v = ['Close', 'High', 'Low']
 
-# Ticker(s) to compare or plot 
-ticker = ['^IXIC','NBIS']
+ticker = 'NBIS'
+ticker = ['NBIS', '^IXIC']
+
+# Ensure the metric(es) and ticker(s) are correct 
+metric_list = list(dataset_xr.coords['metric'].values)
+
+if isinstance(metric_v, str):
+    assert  metric_v in metric_list, f"The input metric is not correct!"
+    metric_v = [metric_v]
+elif isinstance(metric_v, list):
+    assert set(metric_v).issubset(metric_list), f"Not all the input metric(es) are correct!"
+else:
+    pass
+
+ticker_list = list(dataset_xr.data_vars)
+
+if isinstance(ticker, str):
+    assert  ticker in ticker_list, f"The input metric is not correct!"
+    ticker = [ticker]
+elif isinstance(ticker, list):
+    assert set(ticker).issubset(ticker_list), f"Not all the input tickers are correct!"
+else:
+    pass
+
 # ticker = 'NBIS' # after .sel() returns xarray.DataArray which can be ploted directly
 # ticker = ['NBIS'] # after .sel() returns xarray.Dataset
 
@@ -150,14 +173,27 @@ start_date = d1.strftime("%Y-%m-%d")
 dataset_xr_sub = dataset_xr[ticker].sel(metric=metric_v, Date=slice(start_date, end_date))
 # dataset_xr_sub = dataset_xr[ticker].sel(metric=['Close', 'High', 'Low', 'Open', 'Volume']).to_pandas()
 
+# Define line styles and colors to cycle through
+line_styles = ['-', '--', ':', '-.']
+colors = ['blue', 'green', 'purple', 'orange', 'cyan', 'magenta', 'black']
 
 # Plot a single stock or side-by-side with an index
 if isinstance(ticker, list) and len(ticker) == 2:   # side-by-side
-    # Create a figure and the primary axes
+
     fig, ax1 = plt.subplots(figsize=(10, 6))
 
-    # Plot the first series on the primary y-axis (left)
-    ax1.plot(dataset_xr_sub['Date'], dataset_xr_sub[ticker[0]], linestyle='--', color='blue', label=ticker[0])
+    for i, metric in enumerate(dataset_xr_sub.metric.values):
+        # Plot the first series on the primary y-axis (left)
+        # Cycle through line styles and colors
+        style = line_styles[i % len(line_styles)]
+        color = colors[i % len(colors)]
+        ax1.plot(
+            dataset_xr_sub['Date'],
+            dataset_xr_sub[ticker[0]].sel(metric=metric),
+            linestyle=style,
+            color=color,
+            label=f'{ticker[0]}[{metric}]',
+            )
     ax1.set_xlabel('Date')
     ax1.set_ylabel(ticker[0], color='blue')
     ax1.tick_params(axis='y', labelcolor='blue')
@@ -166,7 +202,12 @@ if isinstance(ticker, list) and len(ticker) == 2:   # side-by-side
     ax2 = ax1.twinx()
 
     # Plot the second series on the secondary y-axis (right)
-    ax2.plot(dataset_xr_sub['Date'], dataset_xr_sub[ticker[1]], color='red', label=ticker[1])
+    ax2.plot(
+        dataset_xr_sub['Date'],
+        dataset_xr_sub[ticker[1]].sel(metric='Close'),
+        color='red',
+        label=ticker[1]
+        )
     ax2.set_ylabel(ticker[1], color='red')
     ax2.tick_params(axis='y', labelcolor='red')
 
@@ -178,25 +219,25 @@ if isinstance(ticker, list) and len(ticker) == 2:   # side-by-side
 elif isinstance(ticker, list) and len(ticker) == 1: # individual
     fig, ax1 = plt.subplots(figsize=(10, 6))
 
-    # Plot the first series on the primary y-axis (left)
-    ax1.plot(dataset_xr_sub['Date'], dataset_xr_sub[ticker[0]], color='blue', label=ticker[0])
+    for i, metric in enumerate(dataset_xr_sub.metric.values):
+        # Plot the first series on the primary y-axis (left)
+        # Cycle through line styles and colors
+        style = line_styles[i % len(line_styles)]
+        color = colors[i % len(colors)]
+        ax1.plot(
+            dataset_xr_sub['Date'],
+            dataset_xr_sub[ticker[0]].sel(metric=metric),
+            linestyle=style,
+            color=color,
+            label=f'{ticker[0]}[{metric}]',
+            )
     ax1.set_xlabel('Date')
     ax1.set_ylabel(ticker[0], color='blue')
     ax1.tick_params(axis='y', labelcolor='blue')
-    # Add a title
+
+    # Add a title and legend
     plt.title(f'Daily [{metric_v}] movement for {ticker[0]}')
-    plt.show()
-
-else: # isinstance(ticker, string)
-    fig, ax1 = plt.subplots(figsize=(10, 6))
-
-    # Plot the first series on the primary y-axis (left)
-    ax1.plot(dataset_xr_sub['Date'], dataset_xr_sub, color='blue', label=ticker)
-    ax1.set_xlabel('Date')
-    ax1.set_ylabel(ticker, color='blue')
-    ax1.tick_params(axis='y', labelcolor='blue')
-    # Add a title
-    plt.title(f'Daily [{metric_v}] movement for {ticker}')
+    fig.legend(loc='upper left', bbox_to_anchor=(0.1, 0.9)) # Place legend for both series
     plt.show()
 
 
