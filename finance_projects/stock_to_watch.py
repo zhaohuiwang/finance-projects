@@ -50,6 +50,7 @@ company_ticker = {
     "Nebius":"NBIS",
     "CoreWeave":"CRWV",
     "IREN":"IREN",
+    "Super Micro Computer, Inc.": "SMCI"
     }
 
 # tickers = indices_ticker.update(company_ticker) # Appends the righ to the left
@@ -138,6 +139,9 @@ metric_v = ['Close', 'High', 'Low']
 ticker = 'NBIS'
 ticker = ['NBIS', '^IXIC']
 
+ticker = 'SMCI'
+ticker = ['SMCI', '^IXIC']
+
 # Ensure the metric(es) and ticker(s) are correct 
 metric_list = list(dataset_xr.coords['metric'].values)
 
@@ -163,15 +167,15 @@ else:
 # ticker = ['NBIS'] # after .sel() returns xarray.Dataset
 
 # Select a date range, the number of days back from today 
-day_span = 12
+day_span = 90
 
 end_date = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
 d1 = date.today() - timedelta(days=day_span)
 start_date = d1.strftime("%Y-%m-%d")
 
 # Select a subset based on ticker, metric and time slice.
-dataset_xr_sub = dataset_xr[ticker].sel(metric=metric_v, Date=slice(start_date, end_date))
-# dataset_xr_sub = dataset_xr[ticker].sel(metric=['Close', 'High', 'Low', 'Open', 'Volume']).to_pandas()
+dataset_xr_sub = dataset_xr[ticker].sel(metric=metric_v, Date=slice(start_date, end_date))# or .loc['2025-08-01':]
+
 
 # Define line styles and colors to cycle through
 line_styles = ['-', '--', ':', '-.']
@@ -239,6 +243,40 @@ elif isinstance(ticker, list) and len(ticker) == 1: # individual
     plt.title(f'Daily [{metric_v}] movement for {ticker[0]}')
     fig.legend(loc='upper left', bbox_to_anchor=(0.1, 0.9)) # Place legend for both series
     plt.show()
+
+
+
+
+
+
+ticker = 'AMZN'
+ticker = 'AAL'
+ticker = 'NBIS'
+ticker = 'CRWV'
+
+df = dataset_xr[ticker].sel(metric=['Close', 'High', 'Low', 'Open', 'Volume']).to_pandas().loc['2025-08-01':]
+# The percentage difference between the intraday High and Low
+df["introday_d_p"] = (100 * (df['High'] - df['Low']) / df['Low']).round(0).astype(int)
+# Subset from a specific date to the latest
+df["introday_d_p"]
+
+
+bins = [0, 2, 5, 10, 15, 100]
+labels = ['0-2', '2-5', '5-10', '10-15', '15-100']
+df['introday_v'] = pd.cut(df['introday_d_p'], bins=bins, labels=labels, right=True, include_lowest=True)
+
+df['introday_v'].value_counts().sort_index()
+
+# Introday H and L Delta percent counts (60 days) 
+#            NBIS   CRWV    AAL     AMZN    
+# 0-2        0      0       19      44
+# 2-5       17      11      32      14
+# 5-10      37      40      7       1
+# 10-15      5      7       1       0
+# 15-100     0      1       0       0
+
+
+
 
 
 
@@ -387,5 +425,14 @@ print(quote)
 quotes = client.list_quotes(ticker=ticker, timestamp="2022-01-04")
 for quote in quotes:
     print(quote)
+
+
+
+data = yf.download(
+    tickers="AAL",
+    period="1y", #: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, ytd, max
+    interval="1m",
+    prepost=True
+)
 
 
