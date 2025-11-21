@@ -15,7 +15,18 @@ is_monthly_deduction              bool
 is_payment                        bool
 dtype: object
 >>> 
-
+Here are all the transactions for October 2025
+09/15/2025	09/15/2025	Sweep - Segment Fee - One-Year Choice Plus NYSE® Zebra Edge® Index	($47.54)
+09/15/2025	09/15/2025	Sweep - Segment Fee - One-Year Choice Plus J.P. Morgan Mozaic II℠ Index®	($46.61)    
+09/15/2025	09/15/2025	Sweep - Segment Maturity Value Allocation - One-Year Choice Plus NYSE® Zebra Edge® Index	$3,759.57
+09/15/2025	09/15/2025	Sweep - Segment Maturity Value Allocation - One-Year Choice Plus J.P. Morgan Mozaic II℠ Index®	$3,666.19
+09/15/2025	09/15/2025	Sweep - Net Premium Allocation - One-Year Choice Plus NYSE® Zebra Edge® Index	$994.72
+09/15/2025	09/15/2025	Sweep - Net Premium Allocation - One-Year Choice Plus J.P. Morgan Mozaic II℠ Index®	$994.72
+09/15/2025	09/15/2025	Sweep - Minimum Required Fixed Interest Strategy Amount	$130.26
+09/15/2025	09/15/2025	Sweep - Interest Credit to Segment - One-Year Choice Plus NYSE® Zebra Edge® Index	$0.00
+09/15/2025	09/15/2025	Sweep - Interest Credit to Segment - One-Year Choice Plus J.P. Morgan Mozaic II℠ Index®	$0.00
+09/13/2025	09/15/2025	Monthly Deduction	($137.05)
+09/13/2025	09/15/2025	Payment	$2,255.00
 """
 
 

@@ -185,6 +185,7 @@ colors = ['blue', 'green', 'purple', 'orange', 'cyan', 'magenta', 'black']
 if isinstance(ticker, list) and len(ticker) == 2:   # side-by-side
 
     fig, ax1 = plt.subplots(figsize=(10, 6))
+    #xtick = dataset_xr_sub['Date'].dt.strftime("%Y-%m-%d")
 
     for i, metric in enumerate(dataset_xr_sub.metric.values):
         # Plot the first series on the primary y-axis (left)
@@ -218,6 +219,7 @@ if isinstance(ticker, list) and len(ticker) == 2:   # side-by-side
     # Add a title and legend
     plt.title(f'Daily [{metric_v}] movement for {ticker[0]} and {ticker[1]}')
     fig.legend(loc='upper left', bbox_to_anchor=(0.1, 0.9)) # Place legend for both series
+    plt.savefig("my_plot.png")
     plt.show()
 
 elif isinstance(ticker, list) and len(ticker) == 1: # individual
@@ -242,6 +244,7 @@ elif isinstance(ticker, list) and len(ticker) == 1: # individual
     # Add a title and legend
     plt.title(f'Daily [{metric_v}] movement for {ticker[0]}')
     fig.legend(loc='upper left', bbox_to_anchor=(0.1, 0.9)) # Place legend for both series
+    plt.savefig("my_plot.png")
     plt.show()
 
 
